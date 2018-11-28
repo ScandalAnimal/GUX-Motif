@@ -39,6 +39,8 @@ GC inputGC = 0;			/* GC used for drawing current position */
 int x1, y1, x2, y2;		/* input points */ 
 int button_pressed = 0;		/* input state */
 
+int drawingMode = 0;
+
 /*
  * "InputLine" event handler
  */
@@ -155,11 +157,23 @@ void QuitCB(Widget w, XtPointer client_data, XtPointer call_data)
     exit(0); 
 }
 
+void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setFillingMode (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
 
 int main(int argc, char **argv)
 {
     XtAppContext app_context;
-    Widget topLevel, mainWin, frame, drawArea, rowColumn, quitBtn, clearBtn;
+    Widget topLevel, mainWin, frame, drawArea, rowColumn, quitBtn, clearBtn,
+    	shapesMenu, controlMenu, drawingModeMenu, fillingMenu, lineWidthMenu;
 
     /*
      * Register the default language procedure
@@ -209,18 +223,118 @@ int main(int argc, char **argv)
       XmNorientation, XmHORIZONTAL,	/* orientation */
       XmNpacking, XmPACK_COLUMN,	/* packing mode */
       NULL);				/* terminate varargs list */
-        
+       
+
+    controlMenu = XtVaCreateManagedWidget(
+      "controlMenu",			/* widget name */
+      xmRowColumnWidgetClass,		/* widget class */
+      rowColumn,				/* parent widget */
+      XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
+      XmNorientation, XmHORIZONTAL,	/* orientation */
+      XmNpacking, XmPACK_COLUMN,	/* packing mode */
+      NULL);	
+          
     clearBtn = XtVaCreateManagedWidget(
       "Clear",				/* widget name */
       xmPushButtonWidgetClass,		/* widget class */
-      rowColumn,			/* parent widget*/
+      controlMenu,			/* parent widget*/
       NULL);				/* terminate varargs list */
 
     quitBtn = XtVaCreateManagedWidget(
       "Quit",				/* widget name */
       xmPushButtonWidgetClass,		/* widget class */
-      rowColumn,			/* parent widget*/
+      controlMenu,			/* parent widget*/
       NULL);				/* terminate varargs list */
+
+
+    // drawing modes - point, line, rectangle, ellipse
+    // will be inside rowColumn
+
+    shapesMenu = XtVaCreateManagedWidget(
+      "shapesMenu",			/* widget name */
+      xmRowColumnWidgetClass,		/* widget class */
+      rowColumn,				/* parent widget */
+      XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
+      XmNorientation, XmHORIZONTAL,	/* orientation */
+      XmNpacking, XmPACK_COLUMN,	/* packing mode */
+      NULL);	
+
+    XmString drawingModeLabel = XmStringCreateLocalized("Mode");
+    XmString drawingModePoint = XmStringCreateLocalized("Point");
+    XmString drawingModeLine = XmStringCreateLocalized("Line");
+    XmString drawingModeRectangle = XmStringCreateLocalized("Rectangle");
+    XmString drawingModeEllipse = XmStringCreateLocalized("Ellipse");
+
+    drawingModeMenu = XmVaCreateSimpleOptionMenu (
+    	shapesMenu,
+    	"drawingModeMenu",
+    	drawingModeLabel, 
+    	'd', 
+    	0,
+    	setDrawingMode,
+        XmVaPUSHBUTTON, drawingModePoint, 'p', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeLine, 'l', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeRectangle, 'r', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeEllipse, 'e', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(drawingModeLabel);
+    XmStringFree(drawingModePoint);
+    XmStringFree(drawingModeLine);
+    XmStringFree(drawingModeRectangle);
+    XmStringFree(drawingModeEllipse);
+    XtManageChild(drawingModeMenu);
+
+    // rectangle or ellipse can be filled or not
+
+    XmString fillingLabel = XmStringCreateLocalized("Filling");
+    XmString shapeFilled = XmStringCreateLocalized("Filled");
+    XmString shapeOutlined = XmStringCreateLocalized("Outlined");
+
+    fillingMenu = XmVaCreateSimpleOptionMenu (
+    	shapesMenu,
+    	"fillingMenu",
+    	fillingLabel, 
+    	'f', 
+    	0,
+    	setFillingMode,
+        XmVaPUSHBUTTON, shapeFilled, 'f', NULL, NULL,
+        XmVaPUSHBUTTON, shapeOutlined, 'o', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(fillingLabel);
+    XmStringFree(shapeFilled);
+    XmStringFree(shapeOutlined);
+    XtManageChild(fillingMenu);
+
+    // linw width, can be 0, 3 ,8
+
+    XmString lineWidthLabel = XmStringCreateLocalized("Line Width");
+    XmString width0 = XmStringCreateLocalized("0");
+    XmString width3 = XmStringCreateLocalized("3");
+    XmString width8 = XmStringCreateLocalized("8");
+
+    lineWidthMenu = XmVaCreateSimpleOptionMenu (
+    	shapesMenu,
+    	"lineWidthMenu",
+    	lineWidthLabel, 
+    	'l', 
+    	0,
+    	setLineWidth,
+        XmVaPUSHBUTTON, width0, '0', NULL, NULL,
+        XmVaPUSHBUTTON, width3, '3', NULL, NULL,
+        XmVaPUSHBUTTON, width8, '8', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(lineWidthLabel);
+    XmStringFree(width0);
+    XmStringFree(width3);
+    XmStringFree(width8);
+    XtManageChild(lineWidthMenu);
+
 
     XmMainWindowSetAreas(mainWin, NULL, rowColumn, NULL, NULL, frame);
 
