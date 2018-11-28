@@ -161,7 +161,7 @@ void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data)
 {
 }
 
-void setFillingMode (Widget w, XtPointer client_data, XtPointer call_data)
+void setFillMode (Widget w, XtPointer client_data, XtPointer call_data)
 {
 }
 
@@ -169,11 +169,33 @@ void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data)
 {
 }
 
+void setLineType (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setLineColorFg (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setLineColorBg (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setFillColorFg (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
+void setFillColorBg (Widget w, XtPointer client_data, XtPointer call_data)
+{
+}
+
 int main(int argc, char **argv)
 {
     XtAppContext app_context;
     Widget topLevel, mainWin, frame, drawArea, rowColumn, quitBtn, clearBtn,
-    	shapesMenu, controlMenu, drawingModeMenu, fillingMenu, lineWidthMenu;
+    	shapesMenu, controlMenu, drawingModeMenu, fillMenu, lineWidthMenu,
+    	lineColorFgMenu, lineColorBgMenu, fillColorFgMenu, fillColorBgMenu,
+    	lineTypeMenu, colorMenu;
 
     /*
      * Register the default language procedure
@@ -219,13 +241,30 @@ int main(int argc, char **argv)
       "rowColumn",			/* widget name */
       xmRowColumnWidgetClass,		/* widget class */
       mainWin,				/* parent widget */
+      // XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
+      // XmNorientation, XmHORIZONTAL,	/* orientation */
+      // XmNpacking, XmPACK_COLUMN,	/* packing mode */
+      NULL);				/* terminate varargs list */
+
+	shapesMenu = XtVaCreateManagedWidget(
+      "shapesMenu",			/* widget name */
+      xmRowColumnWidgetClass,		/* widget class */
+      rowColumn,				/* parent widget */
       XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
       XmNorientation, XmHORIZONTAL,	/* orientation */
       XmNpacking, XmPACK_COLUMN,	/* packing mode */
-      NULL);				/* terminate varargs list */
-       
+      NULL);	
 
-    controlMenu = XtVaCreateManagedWidget(
+	colorMenu = XtVaCreateManagedWidget(
+      "colorMenu",			/* widget name */
+      xmRowColumnWidgetClass,		/* widget class */
+      rowColumn,				/* parent widget */
+      XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
+      XmNorientation, XmHORIZONTAL,	/* orientation */
+      XmNpacking, XmPACK_COLUMN,	/* packing mode */
+      NULL);	
+
+	controlMenu = XtVaCreateManagedWidget(
       "controlMenu",			/* widget name */
       xmRowColumnWidgetClass,		/* widget class */
       rowColumn,				/* parent widget */
@@ -233,8 +272,8 @@ int main(int argc, char **argv)
       XmNorientation, XmHORIZONTAL,	/* orientation */
       XmNpacking, XmPACK_COLUMN,	/* packing mode */
       NULL);	
-          
-    clearBtn = XtVaCreateManagedWidget(
+
+	clearBtn = XtVaCreateManagedWidget(
       "Clear",				/* widget name */
       xmPushButtonWidgetClass,		/* widget class */
       controlMenu,			/* parent widget*/
@@ -246,18 +285,8 @@ int main(int argc, char **argv)
       controlMenu,			/* parent widget*/
       NULL);				/* terminate varargs list */
 
-
     // drawing modes - point, line, rectangle, ellipse
     // will be inside rowColumn
-
-    shapesMenu = XtVaCreateManagedWidget(
-      "shapesMenu",			/* widget name */
-      xmRowColumnWidgetClass,		/* widget class */
-      rowColumn,				/* parent widget */
-      XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
-      XmNorientation, XmHORIZONTAL,	/* orientation */
-      XmNpacking, XmPACK_COLUMN,	/* packing mode */
-      NULL);	
 
     XmString drawingModeLabel = XmStringCreateLocalized("Mode");
     XmString drawingModePoint = XmStringCreateLocalized("Point");
@@ -292,13 +321,13 @@ int main(int argc, char **argv)
     XmString shapeFilled = XmStringCreateLocalized("Filled");
     XmString shapeOutlined = XmStringCreateLocalized("Outlined");
 
-    fillingMenu = XmVaCreateSimpleOptionMenu (
+    fillMenu = XmVaCreateSimpleOptionMenu (
     	shapesMenu,
-    	"fillingMenu",
+    	"fillMenu",
     	fillingLabel, 
     	'f', 
     	0,
-    	setFillingMode,
+    	setFillMode,
         XmVaPUSHBUTTON, shapeFilled, 'f', NULL, NULL,
         XmVaPUSHBUTTON, shapeOutlined, 'o', NULL, NULL,
         NULL
@@ -307,9 +336,9 @@ int main(int argc, char **argv)
     XmStringFree(fillingLabel);
     XmStringFree(shapeFilled);
     XmStringFree(shapeOutlined);
-    XtManageChild(fillingMenu);
+    XtManageChild(fillMenu);
 
-    // linw width, can be 0, 3 ,8
+    // line width, can be 0, 3 ,8
 
     XmString lineWidthLabel = XmStringCreateLocalized("Line Width");
     XmString width0 = XmStringCreateLocalized("0");
@@ -334,6 +363,145 @@ int main(int argc, char **argv)
     XmStringFree(width3);
     XmStringFree(width8);
     XtManageChild(lineWidthMenu);
+
+    // line type, can be solid or dashed
+
+    XmString lineTypeLabel = XmStringCreateLocalized("Line Type");
+    XmString lineSolid = XmStringCreateLocalized("solid");
+    XmString lineDashed = XmStringCreateLocalized("dashed");
+
+    lineTypeMenu = XmVaCreateSimpleOptionMenu (
+    	shapesMenu,
+    	"lineTypeMenu",
+    	lineTypeLabel, 
+    	'l', 
+    	0,
+    	setLineType,
+        XmVaPUSHBUTTON, lineSolid, '0', NULL, NULL,
+        XmVaPUSHBUTTON, lineDashed, '3', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(lineTypeLabel);
+    XmStringFree(lineSolid);
+    XmStringFree(lineDashed);
+    XtManageChild(lineTypeMenu);
+
+    // line color, foreground, can be black, white, red, green
+
+    XmString lineColorFgLabel = XmStringCreateLocalized("Line Color (Fg)");
+    XmString lineColorFg1 = XmStringCreateLocalized("Black");
+    XmString lineColorFg2 = XmStringCreateLocalized("White");
+    XmString lineColorFg3 = XmStringCreateLocalized("Red");
+    XmString lineColorFg4 = XmStringCreateLocalized("Green");
+
+    lineColorFgMenu = XmVaCreateSimpleOptionMenu (
+    	colorMenu,
+    	"lineColorFgMenu",
+    	lineColorFgLabel, 
+    	'l', 
+    	0,
+    	setLineColorFg,
+        XmVaPUSHBUTTON, lineColorFg1, '1', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg2, '2', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg3, '3', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg4, '4', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(lineColorFgLabel);
+    XmStringFree(lineColorFg1);
+    XmStringFree(lineColorFg2);
+    XmStringFree(lineColorFg3);
+    XmStringFree(lineColorFg4);
+    XtManageChild(lineColorFgMenu);
+
+    // line color, background, can be black, white, red, green
+
+    XmString lineColorBgLabel = XmStringCreateLocalized("Line Color (Bg)");
+    XmString lineColorBg1 = XmStringCreateLocalized("Black");
+    XmString lineColorBg2 = XmStringCreateLocalized("White");
+    XmString lineColorBg3 = XmStringCreateLocalized("Red");
+    XmString lineColorBg4 = XmStringCreateLocalized("Green");
+
+    lineColorBgMenu = XmVaCreateSimpleOptionMenu (
+    	colorMenu,
+    	"lineColorBgMenu",
+    	lineColorBgLabel, 
+    	'l', 
+    	0,
+    	setLineColorBg,
+        XmVaPUSHBUTTON, lineColorBg1, '1', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorBg2, '2', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorBg3, '3', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorBg4, '4', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(lineColorBgLabel);
+    XmStringFree(lineColorBg1);
+    XmStringFree(lineColorBg2);
+    XmStringFree(lineColorBg3);
+    XmStringFree(lineColorBg4);
+    XtManageChild(lineColorBgMenu);
+
+    // fill color, foreground, can be black, white, red, green
+
+    XmString fillColorFgLabel = XmStringCreateLocalized("Fill Color (Fg)");
+    XmString fillColorFg1 = XmStringCreateLocalized("Black");
+    XmString fillColorFg2 = XmStringCreateLocalized("White");
+    XmString fillColorFg3 = XmStringCreateLocalized("Red");
+    XmString fillColorFg4 = XmStringCreateLocalized("Green");
+
+    fillColorFgMenu = XmVaCreateSimpleOptionMenu (
+    	colorMenu,
+    	"fillColorFgMenu",
+    	fillColorFgLabel, 
+    	'l', 
+    	0,
+    	setFillColorFg,
+        XmVaPUSHBUTTON, fillColorFg1, '1', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorFg2, '2', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorFg3, '3', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorFg4, '4', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(fillColorFgLabel);
+    XmStringFree(fillColorFg1);
+    XmStringFree(fillColorFg2);
+    XmStringFree(fillColorFg3);
+    XmStringFree(fillColorFg4);
+    XtManageChild(fillColorFgMenu);
+
+    // fill color, background, can be black, white, red, green
+
+    XmString fillColorBgLabel = XmStringCreateLocalized("Fill Color (Bg)");
+    XmString fillColorBg1 = XmStringCreateLocalized("Black");
+    XmString fillColorBg2 = XmStringCreateLocalized("White");
+    XmString fillColorBg3 = XmStringCreateLocalized("Red");
+    XmString fillColorBg4 = XmStringCreateLocalized("Green");
+
+    fillColorBgMenu = XmVaCreateSimpleOptionMenu (
+    	colorMenu,
+    	"fillColorBgMenu",
+    	fillColorBgLabel, 
+    	'l', 
+    	0,
+    	setFillColorBg,
+        XmVaPUSHBUTTON, fillColorBg1, '1', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorBg2, '2', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorBg3, '3', NULL, NULL,
+        XmVaPUSHBUTTON, fillColorBg4, '4', NULL, NULL,
+        NULL
+    );
+
+    XmStringFree(fillColorBgLabel);
+    XmStringFree(fillColorBg1);
+    XmStringFree(fillColorBg2);
+    XmStringFree(fillColorBg3);
+    XmStringFree(fillColorBg4);
+    XtManageChild(fillColorBgMenu);
 
 
     XmMainWindowSetAreas(mainWin, NULL, rowColumn, NULL, NULL, frame);
