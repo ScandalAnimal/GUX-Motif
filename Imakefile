@@ -3,7 +3,7 @@
 #include <Motif.rules>
 
 CC=gcc
-CCOPTIONS=-O -Wall -fno-builtin
+CCOPTIONS=-std=c99 -O -Wall -pedantic -fno-builtin
 CDEBUGFLAGS=-g
 
 LOCAL_LIBRARIES = XmClientLibs

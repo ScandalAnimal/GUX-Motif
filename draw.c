@@ -23,7 +23,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <inttypes.h>
 /*
  * Shared variables
  */
@@ -40,6 +40,14 @@ int x1, y1, x2, y2;		/* input points */
 int button_pressed = 0;		/* input state */
 
 int drawingMode = 0;
+int lineWidth = 0;
+
+enum drawingModes {
+	POINT = 0,
+	LINE = 1,
+	RECTANGLE = 2,
+	ELLIPSE = 3
+};
 
 /*
  * "InputLine" event handler
@@ -157,16 +165,41 @@ void QuitCB(Widget w, XtPointer client_data, XtPointer call_data)
     exit(0); 
 }
 
-void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data) {
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		drawingMode = POINT;
+	}
+	else if (selected == 1) {
+		drawingMode = LINE;
+	}
+	else if (selected == 2) {
+		drawingMode = RECTANGLE;
+	}
+	else if (selected == 3) {
+		drawingMode = ELLIPSE;
+	}
+	printf("Drawing Mode: %d\n", drawingMode);
 }
 
 void setFillMode (Widget w, XtPointer client_data, XtPointer call_data)
 {
 }
 
-void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data) {
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		lineWidth = 0;
+	}
+	else if (selected == 1) {
+		lineWidth = 3;
+	}
+	else if (selected == 2) {
+		lineWidth = 8;
+	}
+	printf("Line Width: %d\n", lineWidth);
 }
 
 void setLineType (Widget w, XtPointer client_data, XtPointer call_data)
@@ -241,9 +274,9 @@ int main(int argc, char **argv)
       "rowColumn",			/* widget name */
       xmRowColumnWidgetClass,		/* widget class */
       mainWin,				/* parent widget */
-      // XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
-      // XmNorientation, XmHORIZONTAL,	/* orientation */
-      // XmNpacking, XmPACK_COLUMN,	/* packing mode */
+      XmNentryAlignment, XmALIGNMENT_CENTER,	/* alignment */
+      XmNorientation, XmVERTICAL,	/* orientation */
+      XmNpacking, XmPACK_COLUMN,	/* packing mode */
       NULL);				/* terminate varargs list */
 
 	shapesMenu = XtVaCreateManagedWidget(
@@ -298,13 +331,13 @@ int main(int argc, char **argv)
     	shapesMenu,
     	"drawingModeMenu",
     	drawingModeLabel, 
-    	'd', 
+    	'x', 
     	0,
     	setDrawingMode,
-        XmVaPUSHBUTTON, drawingModePoint, 'p', NULL, NULL,
-        XmVaPUSHBUTTON, drawingModeLine, 'l', NULL, NULL,
-        XmVaPUSHBUTTON, drawingModeRectangle, 'r', NULL, NULL,
-        XmVaPUSHBUTTON, drawingModeEllipse, 'e', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModePoint, '0', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeLine, '1', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeRectangle, '2', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeEllipse, '3', NULL, NULL,
         NULL
     );
 
@@ -325,11 +358,11 @@ int main(int argc, char **argv)
     	shapesMenu,
     	"fillMenu",
     	fillingLabel, 
-    	'f', 
+    	'x', 
     	0,
     	setFillMode,
-        XmVaPUSHBUTTON, shapeFilled, 'f', NULL, NULL,
-        XmVaPUSHBUTTON, shapeOutlined, 'o', NULL, NULL,
+        XmVaPUSHBUTTON, shapeFilled, '0', NULL, NULL,
+        XmVaPUSHBUTTON, shapeOutlined, '1', NULL, NULL,
         NULL
     );
 
@@ -349,12 +382,12 @@ int main(int argc, char **argv)
     	shapesMenu,
     	"lineWidthMenu",
     	lineWidthLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setLineWidth,
         XmVaPUSHBUTTON, width0, '0', NULL, NULL,
-        XmVaPUSHBUTTON, width3, '3', NULL, NULL,
-        XmVaPUSHBUTTON, width8, '8', NULL, NULL,
+        XmVaPUSHBUTTON, width3, '1', NULL, NULL,
+        XmVaPUSHBUTTON, width8, '2', NULL, NULL,
         NULL
     );
 
@@ -374,11 +407,11 @@ int main(int argc, char **argv)
     	shapesMenu,
     	"lineTypeMenu",
     	lineTypeLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setLineType,
         XmVaPUSHBUTTON, lineSolid, '0', NULL, NULL,
-        XmVaPUSHBUTTON, lineDashed, '3', NULL, NULL,
+        XmVaPUSHBUTTON, lineDashed, '1', NULL, NULL,
         NULL
     );
 
@@ -399,13 +432,13 @@ int main(int argc, char **argv)
     	colorMenu,
     	"lineColorFgMenu",
     	lineColorFgLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setLineColorFg,
-        XmVaPUSHBUTTON, lineColorFg1, '1', NULL, NULL,
-        XmVaPUSHBUTTON, lineColorFg2, '2', NULL, NULL,
-        XmVaPUSHBUTTON, lineColorFg3, '3', NULL, NULL,
-        XmVaPUSHBUTTON, lineColorFg4, '4', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg1, '0', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg2, '1', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg3, '2', NULL, NULL,
+        XmVaPUSHBUTTON, lineColorFg4, '3', NULL, NULL,
         NULL
     );
 
@@ -428,7 +461,7 @@ int main(int argc, char **argv)
     	colorMenu,
     	"lineColorBgMenu",
     	lineColorBgLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setLineColorBg,
         XmVaPUSHBUTTON, lineColorBg1, '1', NULL, NULL,
@@ -457,7 +490,7 @@ int main(int argc, char **argv)
     	colorMenu,
     	"fillColorFgMenu",
     	fillColorFgLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setFillColorFg,
         XmVaPUSHBUTTON, fillColorFg1, '1', NULL, NULL,
@@ -486,7 +519,7 @@ int main(int argc, char **argv)
     	colorMenu,
     	"fillColorBgMenu",
     	fillColorBgLabel, 
-    	'l', 
+    	'x', 
     	0,
     	setFillColorBg,
         XmVaPUSHBUTTON, fillColorBg1, '1', NULL, NULL,
