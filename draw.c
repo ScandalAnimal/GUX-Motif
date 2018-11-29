@@ -223,19 +223,19 @@ void drawCB(Widget w, XtPointer client_data, XtPointer call_data) {
     }
 }
 
-/*
- * "Expose" callback function
- */
-/* ARGSUSED */
-void ExposeCB(Widget w, XtPointer client_data, XtPointer call_data)
-{
+// /*
+//  * "Expose" callback function
+//  */
+// /* ARGSUSED */
+// void ExposeCB(Widget w, XtPointer client_data, XtPointer call_data)
+// {
 
-    if (nobjects <= 0)
-	return;
-    if (!drawGC)
-	drawGC = XCreateGC(XtDisplay(w), XtWindow(w), 0, NULL);
-    XDrawSegments(XtDisplay(w), XtWindow(w), drawGC, objects, nobjects);
-}
+//     if (nobjects <= 0)
+// 	return;
+//     if (!drawGC)
+// 	drawGC = XCreateGC(XtDisplay(w), XtWindow(w), 0, NULL);
+//     XDrawSegments(XtDisplay(w), XtWindow(w), drawGC, objects, nobjects);
+// }
 
 /*
  * "Clear" button callback function
@@ -753,7 +753,7 @@ int main(int argc, char **argv){
 
     XtAddCallback(drawArea, XmNinputCallback, drawCB, drawArea);
     XtAddEventHandler(drawArea, ButtonMotionMask, False, inputEH, NULL);
-    XtAddCallback(drawArea, XmNexposeCallback, ExposeCB, drawArea);
+    // XtAddCallback(drawArea, XmNexposeCallback, ExposeCB, drawArea);
 	display = XtDisplay(drawArea);
 	cmap = DefaultColormap(display, DefaultScreen(display));
 	XtVaGetValues(drawArea, XmNbackground, &drawAreaPixel, NULL);
