@@ -37,6 +37,7 @@ GC drawGC = 0;			/* GC used for final drawing */
 GC inputGC = 0;			/* GC used for drawing current position */
 
 int x1, y1, x2, y2;		/* input points */ 
+int rectX, rectY;
 int button_pressed = 0;		/* input state */
 
 int drawingMode = 0;
@@ -58,11 +59,30 @@ enum lineTypes {
 Display *display;		
 Colormap cmap;
 
-Pixel drawAreaPixel = 1;
-Pixel lineColorFgPixel = 1;	
-Pixel lineColorBgPixel = 1;	
-Pixel fillColorFgPixel = 1;	
-Pixel fillColorBgPixel = 1;	
+Pixel drawAreaPixel = 0;
+Pixel lineColorFgPixel = 0;	
+Pixel lineColorBgPixel = 0;	
+Pixel fillColorFgPixel = 0;	
+Pixel fillColorBgPixel = 0;	
+
+void countRectangleParameters(int x1, int y1, int x2, int y2) {
+
+	if (x1 > x2) {
+		rectX = x2;
+	}
+	else {
+		rectX = x1;
+	}
+
+	if (y1 > y2) {
+		rectY = y2;
+	}
+	else {
+		rectY = y1;
+	}
+
+}
+
 
 /*
  * "input" event handler
@@ -103,6 +123,13 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 				// 	XDrawPoint(XtDisplay(w), XtWindow(w), inputGC, x2, y2);		
 				// }
 			}
+			else if (drawingMode == RECTANGLE) {
+				countRectangleParameters(x1, y1, x2, y2);
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+				XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+			}
 
 		} else {
 		    /* remember first MotionNotify */
@@ -119,6 +146,13 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 	    else if (drawingMode == POINT) {
 			// IDK
 	    }
+	    else if (drawingMode == RECTANGLE) {
+			countRectangleParameters(x1, y1, x2, y2);
+			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+			XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+			XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+		}
 		
     }
 }
