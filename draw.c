@@ -43,6 +43,7 @@ int button_pressed = 0;		/* input state */
 int drawingMode = 0;
 int lineWidth = 0;
 int lineType = 0;
+int fillMode = 0;
 
 enum drawingModes {
 	LINE = 0,
@@ -54,6 +55,11 @@ enum drawingModes {
 enum lineTypes {
 	SOLID = LineSolid,
 	DASHED = LineDoubleDash
+};
+
+enum fillModes {
+	FILLED = 0,
+	OUTLINED = 1
 };
 
 Display *display;		
@@ -128,18 +134,22 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 			}
 			else if (drawingMode == RECTANGLE) {
 				countShapeParameters(x1, y1, x2, y2);
-				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
-				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+				if (fillMode == FILLED) {
+					XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+					XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
+					XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+				}
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 				XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 			}
 			else if (drawingMode == ELLIPSE) {
 				countShapeParameters(x1, y1, x2, y2);
-				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
-				XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+				if (fillMode == FILLED) {
+					XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+					XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
+					XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+				}
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 				XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
@@ -166,18 +176,22 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 	    }
 		else if (drawingMode == RECTANGLE) {
 			countShapeParameters(x1, y1, x2, y2);
-			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
-			XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+			if (fillMode == FILLED) {
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
+				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+			}
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 			XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 		}
 		else if (drawingMode == ELLIPSE) {
 			countShapeParameters(x1, y1, x2, y2);
-			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
-			XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+			if (fillMode == FILLED) {
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
+				XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+			}
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 			XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
@@ -263,8 +277,7 @@ void ClearCB(Widget w, XtPointer client_data, XtPointer call_data)
  * "Quit" button callback function
  */
 /* ARGSUSED */
-void QuitCB(Widget w, XtPointer client_data, XtPointer call_data)
-{ 
+void QuitCB(Widget w, XtPointer client_data, XtPointer call_data){ 
 
     exit(0); 
 }
@@ -287,8 +300,16 @@ void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data) {
 	printf("Drawing Mode: %d\n", drawingMode);
 }
 
-void setFillMode (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setFillMode (Widget w, XtPointer client_data, XtPointer call_data) {
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		fillMode = FILLED;
+	}
+	else if (selected == 1) {
+		fillMode = OUTLINED;
+	}
+	printf("Fill Mode: %d\n", fillMode);
 }
 
 void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data) {
