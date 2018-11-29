@@ -113,6 +113,7 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 		    /* erase previous position */
 		
 	    	XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+	    	XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 
 		    if (drawingMode == LINE) {
 				XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
@@ -128,15 +129,19 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 			else if (drawingMode == RECTANGLE) {
 				countShapeParameters(x1, y1, x2, y2);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
 				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 				XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 			}
 			else if (drawingMode == ELLIPSE) {
 				countShapeParameters(x1, y1, x2, y2);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
 				XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+				XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 				XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 			}
 
@@ -151,6 +156,7 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 		width = abs(x1 - x2);
 		height = abs(y1 - y2);
 		XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+		XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 
 		if (drawingMode == LINE) {
 			XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
@@ -161,15 +167,19 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 		else if (drawingMode == RECTANGLE) {
 			countShapeParameters(x1, y1, x2, y2);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
 			XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 			XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 		}
 		else if (drawingMode == ELLIPSE) {
 			countShapeParameters(x1, y1, x2, y2);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorBgPixel);
 			XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+			XSetBackground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorBgPixel);
 			XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 		}
 		
