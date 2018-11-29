@@ -28,10 +28,10 @@
  * Shared variables
  */
 
-#define LINES_ALLOC_STEP	10	/* memory allocation stepping */
-XSegment *lines = NULL;		/* array of line descriptors */
-int maxlines = 0;		/* space allocated for max lines */
-int nlines = 0;			/* current number of lines */
+#define OBJECTS_ALLOC_STEP	10	/* memory allocation stepping */
+XSegment *objects = NULL;		/* array of object descriptors */
+int maxobjects = 0;		/* space allocated for max objects */
+int nobjects = 0;			/* current number of objects */
 
 GC drawGC = 0;			/* GC used for final drawing */
 GC inputGC = 0;			/* GC used for drawing current position */
@@ -41,91 +41,132 @@ int button_pressed = 0;		/* input state */
 
 int drawingMode = 0;
 int lineWidth = 0;
+int lineType = 0;
 
 enum drawingModes {
-	POINT = 0,
-	LINE = 1,
+	LINE = 0,
+	POINT = 1,
 	RECTANGLE = 2,
 	ELLIPSE = 3
 };
 
+enum lineTypes {
+	SOLID = LineSolid,
+	DASHED = LineDoubleDash
+};
+
+Display *display;		
+Colormap cmap;
+
+Pixel drawAreaPixel = 1;
+Pixel lineColorFgPixel = 1;	
+Pixel lineColorBgPixel = 1;	
+Pixel fillColorFgPixel = 1;	
+Pixel fillColorBgPixel = 1;	
+
 /*
- * "InputLine" event handler
+ * "input" event handler
  */
 /* ARGSUSED */
-void InputLineEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
+void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 {
     Pixel	fg, bg;
 
     if (button_pressed) {
-	if (!inputGC) {
-	    inputGC = XCreateGC(XtDisplay(w), XtWindow(w), 0, NULL);
-	    XSetFunction(XtDisplay(w), inputGC, GXxor);
-	    XSetPlaneMask(XtDisplay(w), inputGC, ~0);
-	    XtVaGetValues(w, XmNforeground, &fg, XmNbackground, &bg, NULL);
-	    XSetForeground(XtDisplay(w), inputGC, fg ^ bg);
-	}
+		if (!inputGC) {
+		    inputGC = XCreateGC(XtDisplay(w), XtWindow(w), 0, NULL);
+		    XSetFunction(XtDisplay(w), inputGC, GXxor);
+		    XSetPlaneMask(XtDisplay(w), inputGC, ~0);
+		    XtVaGetValues(w, XmNforeground, &fg, XmNbackground, &bg, NULL);
+		    XSetForeground(XtDisplay(w), inputGC, fg ^ bg);
+		}
 
-	if (button_pressed > 1) {
-	    /* erase previous position */
-	    XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
-	} else {
-	    /* remember first MotionNotify */
-	    button_pressed = 2;
-	}
+		if (lineWidth == 0) {
+			XSetLineAttributes(XtDisplay(w), inputGC, lineWidth, LineSolid, CapButt, JoinMiter);
+		}
+		else {
+			XSetLineAttributes(XtDisplay(w), inputGC, lineWidth, lineType, CapButt, JoinMiter);
+		}
 
-	x2 = event->xmotion.x;
-	y2 = event->xmotion.y;
+		if (button_pressed > 1) {
+		    /* erase previous position */
+			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 
-	XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
+		    if (drawingMode == LINE) {
+				XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
+		    }
+		    else if (drawingMode == POINT) {
+				// if (lineWidth != 0) {
+				// 	XFillArc(XtDisplay(w), XtWindow(w), inputGC, x2 - (lineWidth/2), y2 - (lineWidth/2), lineWidth, lineWidth, 0, 360*64);
+				// }	
+				// else {
+				// 	XDrawPoint(XtDisplay(w), XtWindow(w), inputGC, x2, y2);		
+				// }
+			}
+
+		} else {
+		    /* remember first MotionNotify */
+		    button_pressed = 2;
+		}
+
+		x2 = event->xmotion.x;
+		y2 = event->xmotion.y;
+
+		XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+		if (drawingMode == LINE) {
+			XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
+	    }
+	    else if (drawingMode == POINT) {
+			// IDK
+	    }
+		
     }
 }
 
 /*
- * "DrawLine" callback function
+ * "draw" callback function
  */
-void DrawLineCB(Widget w, XtPointer client_data, XtPointer call_data)
-{
+void drawCB(Widget w, XtPointer client_data, XtPointer call_data) {
     Arg al[4];
     int ac;
     XGCValues v;
     XmDrawingAreaCallbackStruct *d = (XmDrawingAreaCallbackStruct*) call_data;
 
     switch (d->event->type) {
-	case ButtonPress:
-	    if (d->event->xbutton.button == Button1) {
-		button_pressed = 1;
-		x1 = d->event->xbutton.x;
-		y1 = d->event->xbutton.y;
-	    }
-	    break;
+		case ButtonPress:
+	 		if (d->event->xbutton.button == Button1) {
+				button_pressed = 1;
+				x1 = d->event->xbutton.x;
+				y1 = d->event->xbutton.y;
+	    	}
+	    	break;
 
-	case ButtonRelease:
-	    if (d->event->xbutton.button == Button1) {
-		if (++nlines > maxlines) {
-		    maxlines += LINES_ALLOC_STEP;
-		    lines = (XSegment*) XtRealloc((char*)lines,
-		      (Cardinal)(sizeof(XSegment) * maxlines));
-		}
+		case ButtonRelease:
+	    	if (d->event->xbutton.button == Button1) {
+				if (++nobjects > maxobjects) {
+		    		maxobjects += OBJECTS_ALLOC_STEP;
+		    		objects = (XSegment*) XtRealloc((char*)objects,
+		      		(Cardinal)(sizeof(XSegment) * maxobjects));
+				}
 
-		lines[nlines - 1].x1 = x1;
-		lines[nlines - 1].y1 = y1;
-		lines[nlines - 1].x2 = d->event->xbutton.x;
-		lines[nlines - 1].y2 = d->event->xbutton.y;
+				objects[nobjects - 1].x1 = x1;
+				objects[nobjects - 1].y1 = y1;
+				objects[nobjects - 1].x2 = d->event->xbutton.x;
+				objects[nobjects - 1].y2 = d->event->xbutton.y;
 
-		button_pressed = 0;
+				button_pressed = 0;	
 
-		if (!drawGC) {
-		    ac = 0;
-		    XtSetArg(al[ac], XmNforeground, &v.foreground); ac++;
-		    XtGetValues(w, al, ac);
-		    drawGC = XCreateGC(XtDisplay(w), XtWindow(w),
-			GCForeground, &v);
-		}
-		XDrawLine(XtDisplay(w), XtWindow(w), drawGC,
-		  x1, y1, d->event->xbutton.x, d->event->xbutton.y);
-	    }
-	    break;
+				if (!drawGC) {
+				    ac = 0;
+				    XtSetArg(al[ac], XmNforeground, &v.foreground); ac++;
+				    XtGetValues(w, al, ac);
+				    drawGC = XCreateGC(XtDisplay(w), XtWindow(w),
+					GCForeground, &v);
+				}
+				// XDrawLine(XtDisplay(w), XtWindow(w), drawGC,
+				  // x1, y1, d->event->xbutton.x, d->event->xbutton.y);
+			}
+	    	break;
     }
 }
 
@@ -136,11 +177,11 @@ void DrawLineCB(Widget w, XtPointer client_data, XtPointer call_data)
 void ExposeCB(Widget w, XtPointer client_data, XtPointer call_data)
 {
 
-    if (nlines <= 0)
+    if (nobjects <= 0)
 	return;
     if (!drawGC)
 	drawGC = XCreateGC(XtDisplay(w), XtWindow(w), 0, NULL);
-    XDrawSegments(XtDisplay(w), XtWindow(w), drawGC, lines, nlines);
+    XDrawSegments(XtDisplay(w), XtWindow(w), drawGC, objects, nobjects);
 }
 
 /*
@@ -151,7 +192,7 @@ void ClearCB(Widget w, XtPointer client_data, XtPointer call_data)
 { 
     Widget wcd = (Widget) client_data;
 
-    nlines = 0;
+    nobjects = 0;
     XClearWindow(XtDisplay(wcd), XtWindow(wcd));
 }
 
@@ -169,10 +210,10 @@ void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data) {
 
 	uintptr_t  selected = (uintptr_t ) client_data;
 	if (selected == 0) {
-		drawingMode = POINT;
+		drawingMode = LINE;
 	}
 	else if (selected == 1) {
-		drawingMode = LINE;
+		drawingMode = POINT;
 	}
 	else if (selected == 2) {
 		drawingMode = RECTANGLE;
@@ -200,30 +241,148 @@ void setLineWidth (Widget w, XtPointer client_data, XtPointer call_data) {
 		lineWidth = 8;
 	}
 	printf("Line Width: %d\n", lineWidth);
+
 }
 
-void setLineType (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setLineType (Widget w, XtPointer client_data, XtPointer call_data) {
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		lineType = SOLID;
+	}
+	else if (selected == 1) {
+		lineType = DASHED;
+	}
+	printf("Line Type: %d\n", lineType);
 }
 
-void setLineColorFg (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setLineColorFg (Widget w, XtPointer client_data, XtPointer call_data) {
+
+    XColor xcolor, spare;	/* xlib color struct */
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		if (XAllocNamedColor(display, cmap, "black", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 1) {
+		if (XAllocNamedColor(display, cmap, "white", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 2) {
+		if (XAllocNamedColor(display, cmap, "red", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 3) {
+		if (XAllocNamedColor(display, cmap, "green", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorFgPixel = xcolor.pixel;
+	}
+	printf("Line Fg Color: %d\n", lineColorFgPixel);
 }
 
-void setLineColorBg (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setLineColorBg (Widget w, XtPointer client_data, XtPointer call_data) {
+	XColor xcolor, spare;	/* xlib color struct */
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		if (XAllocNamedColor(display, cmap, "black", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 1) {
+		if (XAllocNamedColor(display, cmap, "white", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 2) {
+		if (XAllocNamedColor(display, cmap, "red", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 3) {
+		if (XAllocNamedColor(display, cmap, "green", &xcolor, &spare) == 0) {
+	        return;
+		}
+		lineColorBgPixel = xcolor.pixel;
+	}
+	printf("Line Bg Color: %d\n", lineColorBgPixel);
 }
 
-void setFillColorFg (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setFillColorFg (Widget w, XtPointer client_data, XtPointer call_data) {
+	XColor xcolor, spare;	/* xlib color struct */
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		if (XAllocNamedColor(display, cmap, "black", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 1) {
+		if (XAllocNamedColor(display, cmap, "white", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 2) {
+		if (XAllocNamedColor(display, cmap, "red", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorFgPixel = xcolor.pixel;
+	}
+	else if (selected == 3) {
+		if (XAllocNamedColor(display, cmap, "green", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorFgPixel = xcolor.pixel;
+	}
+	printf("Fill Fg Color: %d\n", fillColorFgPixel);
 }
 
-void setFillColorBg (Widget w, XtPointer client_data, XtPointer call_data)
-{
+void setFillColorBg (Widget w, XtPointer client_data, XtPointer call_data) {
+
+	XColor xcolor, spare;	/* xlib color struct */
+
+	uintptr_t  selected = (uintptr_t ) client_data;
+	if (selected == 0) {
+		if (XAllocNamedColor(display, cmap, "black", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 1) {
+		if (XAllocNamedColor(display, cmap, "white", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 2) {
+		if (XAllocNamedColor(display, cmap, "red", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorBgPixel = xcolor.pixel;
+	}
+	else if (selected == 3) {
+		if (XAllocNamedColor(display, cmap, "green", &xcolor, &spare) == 0) {
+	        return;
+		}
+		fillColorBgPixel = xcolor.pixel;
+	}
+	printf("Fill Bg Color: %d\n", fillColorBgPixel);
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
     XtAppContext app_context;
     Widget topLevel, mainWin, frame, drawArea, rowColumn, quitBtn, clearBtn,
     	shapesMenu, controlMenu, drawingModeMenu, fillMenu, lineWidthMenu,
@@ -322,8 +481,8 @@ int main(int argc, char **argv)
     // will be inside rowColumn
 
     XmString drawingModeLabel = XmStringCreateLocalized("Mode");
-    XmString drawingModePoint = XmStringCreateLocalized("Point");
     XmString drawingModeLine = XmStringCreateLocalized("Line");
+    XmString drawingModePoint = XmStringCreateLocalized("Point");
     XmString drawingModeRectangle = XmStringCreateLocalized("Rectangle");
     XmString drawingModeEllipse = XmStringCreateLocalized("Ellipse");
 
@@ -334,16 +493,16 @@ int main(int argc, char **argv)
     	'x', 
     	0,
     	setDrawingMode,
-        XmVaPUSHBUTTON, drawingModePoint, '0', NULL, NULL,
-        XmVaPUSHBUTTON, drawingModeLine, '1', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModeLine, '0', NULL, NULL,
+        XmVaPUSHBUTTON, drawingModePoint, '1', NULL, NULL,
         XmVaPUSHBUTTON, drawingModeRectangle, '2', NULL, NULL,
         XmVaPUSHBUTTON, drawingModeEllipse, '3', NULL, NULL,
         NULL
     );
 
     XmStringFree(drawingModeLabel);
-    XmStringFree(drawingModePoint);
     XmStringFree(drawingModeLine);
+    XmStringFree(drawingModePoint);
     XmStringFree(drawingModeRectangle);
     XmStringFree(drawingModeEllipse);
     XtManageChild(drawingModeMenu);
@@ -539,12 +698,27 @@ int main(int argc, char **argv)
 
     XmMainWindowSetAreas(mainWin, NULL, rowColumn, NULL, NULL, frame);
 
-    XtAddCallback(drawArea, XmNinputCallback, DrawLineCB, drawArea);
-    XtAddEventHandler(drawArea, ButtonMotionMask, False, InputLineEH, NULL);
+    XtAddCallback(drawArea, XmNinputCallback, drawCB, drawArea);
+    XtAddEventHandler(drawArea, ButtonMotionMask, False, inputEH, NULL);
     XtAddCallback(drawArea, XmNexposeCallback, ExposeCB, drawArea);
+	display = XtDisplay(drawArea);
+	cmap = DefaultColormap(display, DefaultScreen(display));
+	XtVaGetValues(drawArea, XmNbackground, &drawAreaPixel, NULL);
+
 
     XtAddCallback(clearBtn, XmNactivateCallback, ClearCB, drawArea);
     XtAddCallback(quitBtn, XmNactivateCallback, QuitCB, 0);
+
+
+	// XtAddCallback(drawingModeMenu, XmNactivateCallback, setDrawingMode, drawingModeMenu);
+	// XtAddCallback(fillMenu, XmNactivateCallback, setFillMode, fillMenu);
+	// XtAddCallback(lineWidthMenu, XmNactivateCallback, setLineWidth, lineWidthMenu);
+	// XtAddCallback(lineColorFgMenu, XmNactivateCallback, setLineColorFg, lineColorFgMenu);
+	// XtAddCallback(lineColorBgMenu, XmNactivateCallback, setLineColorBg, lineColorBgMenu);
+	// XtAddCallback(fillColorFgMenu, XmNactivateCallback, setFillColorFg, fillColorFgMenu);
+	// XtAddCallback(fillColorBgMenu, XmNactivateCallback, setFillColorBg, fillColorBgMenu);
+	// XtAddCallback(lineTypeMenu, XmNactivateCallback, setLineType, lineTypeMenu);
+
 
     XtRealizeWidget(topLevel);
 
