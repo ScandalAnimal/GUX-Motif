@@ -37,7 +37,7 @@ GC drawGC = 0;			/* GC used for final drawing */
 GC inputGC = 0;			/* GC used for drawing current position */
 
 int x1, y1, x2, y2;		/* input points */ 
-int rectX, rectY;
+int leftX, leftY;
 int button_pressed = 0;		/* input state */
 
 int drawingMode = 0;
@@ -65,24 +65,23 @@ Pixel lineColorBgPixel = 0;
 Pixel fillColorFgPixel = 0;	
 Pixel fillColorBgPixel = 0;	
 
-void countRectangleParameters(int x1, int y1, int x2, int y2) {
+void countShapeParameters(int x1, int y1, int x2, int y2) {
 
 	if (x1 > x2) {
-		rectX = x2;
+		leftX = x2;
 	}
 	else {
-		rectX = x1;
+		leftX = x1;
 	}
 
 	if (y1 > y2) {
-		rectY = y2;
+		leftY = y2;
 	}
 	else {
-		rectY = y1;
+		leftY = y1;
 	}
 
 }
-
 
 /*
  * "input" event handler
@@ -108,9 +107,12 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 			XSetLineAttributes(XtDisplay(w), inputGC, lineWidth, lineType, CapButt, JoinMiter);
 		}
 
+		int width = abs(x1 - x2);
+		int height = abs(y1 - y2);
 		if (button_pressed > 1) {
 		    /* erase previous position */
-			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+		
+	    	XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
 
 		    if (drawingMode == LINE) {
 				XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
@@ -124,11 +126,18 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 				// }
 			}
 			else if (drawingMode == RECTANGLE) {
-				countRectangleParameters(x1, y1, x2, y2);
+				countShapeParameters(x1, y1, x2, y2);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+				XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
-				XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+				XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+			}
+			else if (drawingMode == ELLIPSE) {
+				countShapeParameters(x1, y1, x2, y2);
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+				XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+				XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+				XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 			}
 
 		} else {
@@ -139,19 +148,29 @@ void inputEH(Widget w, XtPointer client_data, XEvent *event, Boolean *cont)
 		x2 = event->xmotion.x;
 		y2 = event->xmotion.y;
 
+		width = abs(x1 - x2);
+		height = abs(y1 - y2);
 		XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+
 		if (drawingMode == LINE) {
 			XDrawLine(XtDisplay(w), XtWindow(w), inputGC, x1, y1, x2, y2);
 	    }
 	    else if (drawingMode == POINT) {
 			// IDK
 	    }
-	    else if (drawingMode == RECTANGLE) {
-			countRectangleParameters(x1, y1, x2, y2);
+		else if (drawingMode == RECTANGLE) {
+			countShapeParameters(x1, y1, x2, y2);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
-			XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+			XFillRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
 			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
-			XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, rectX, rectY, abs(x1 - x2), abs(y1 - y2));
+			XDrawRectangle(XtDisplay(w), XtWindow(w), inputGC, leftX, leftY, width, height);
+		}
+		else if (drawingMode == ELLIPSE) {
+			countShapeParameters(x1, y1, x2, y2);
+			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ fillColorFgPixel);
+			XFillArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
+			XSetForeground(XtDisplay(w), inputGC, drawAreaPixel ^ lineColorFgPixel);
+			XDrawArc(XtDisplay(w), XtWindow(w), inputGC, leftX - width, leftY - height, 2 * width, 2 * height, 0, 360*64);
 		}
 		
     }
