@@ -17,6 +17,9 @@
 #include <Xm/DrawingA.h>
 #include <Xm/PushB.h>
 #include <Xm/RowColumn.h>
+#include <Xm/MessageB.h>
+#include <Xm/Protocols.h>
+#include <X11/Xmu/Editres.h>
 
 /*
  * Common C library include files
@@ -44,6 +47,8 @@ int drawingMode = 0;
 int lineWidth = 0;
 int lineType = 0;
 int fillMode = 0;
+
+Atom wm_delete;
 
 enum drawingModes {
 	LINE = 0,
@@ -273,13 +278,14 @@ void ClearCB(Widget w, XtPointer client_data, XtPointer call_data)
     XClearWindow(XtDisplay(wcd), XtWindow(wcd));
 }
 
-/*
- * "Quit" button callback function
- */
-/* ARGSUSED */
 void QuitCB(Widget w, XtPointer client_data, XtPointer call_data){ 
 
-    exit(0); 
+	XtManageChild(client_data); 
+}
+
+void ExitCB(Widget w, XtPointer client_data, XtPointer call_data){ 
+
+	exit(0);
 }
 
 void setDrawingMode (Widget w, XtPointer client_data, XtPointer call_data) {
@@ -467,11 +473,20 @@ void setFillColorBg (Widget w, XtPointer client_data, XtPointer call_data) {
 }
 
 int main(int argc, char **argv){
+
     XtAppContext app_context;
     Widget topLevel, mainWin, frame, drawArea, rowColumn, quitBtn, clearBtn,
     	shapesMenu, controlMenu, drawingModeMenu, fillMenu, lineWidthMenu,
     	lineColorFgMenu, lineColorBgMenu, fillColorFgMenu, fillColorBgMenu,
-    	lineTypeMenu, colorMenu;
+    	lineTypeMenu, colorMenu, quitDialog;
+
+    char *fall[] = {
+	    "*question.dialogTitle: Quit",
+	    "*question.messageString: Do you really want to quit?",
+	    "*question.okLabelString: OK",
+	    "*question.cancelLabelString: Cancel",
+	    "*question.messageAlignment: XmALIGNMENT_CENTER",
+	    NULL};
 
     /*
      * Register the default language procedure
@@ -479,12 +494,14 @@ int main(int argc, char **argv){
     XtSetLanguageProc(NULL, (XtLanguageProc)NULL, NULL);
 
     topLevel = XtVaAppInitialize(
-      &app_context,		 	/* Application context */
-      "Draw",				/* Application class */
-      NULL, 0,				/* command line option list */
-      &argc, argv,			/* command line args */
-      NULL,				/* for missing app-defaults file */
-      NULL);				/* terminate varargs list */
+	    &app_context, 
+	    "Draw",
+	    NULL, 0,
+	    &argc, argv,
+	    fall,
+	    XmNheight, (int) 500,
+	    XmNdeleteResponse, XmDO_NOTHING,
+	    NULL);
 
     mainWin = XtVaCreateManagedWidget(
       "mainWin",			/* widget name */
@@ -560,6 +577,38 @@ int main(int argc, char **argv){
       xmPushButtonWidgetClass,		/* widget class */
       controlMenu,			/* parent widget*/
       NULL);				/* terminate varargs list */
+
+    // quit dialog
+
+    XmString quitDialogLabel = XmStringCreateLocalized("Do you really want to quit?");
+    XmString quitDialogOk = XmStringCreateLocalized("OK");
+    XmString quitDialogCancel = XmStringCreateLocalized("Cancel");
+
+    quitDialog = XmCreateQuestionDialog(
+    	mainWin, 
+    	"quitDialog", 
+    	NULL, 
+    	0);
+
+    XtVaSetValues(quitDialog,
+      XmNdialogStyle, XmDIALOG_FULL_APPLICATION_MODAL,
+      XmNmessageString, quitDialogLabel,
+      XmNokLabelString, quitDialogOk,
+      XmNcancelLabelString, quitDialogCancel,
+      NULL);
+
+    XtAddCallback(quitBtn, XmNactivateCallback, QuitCB, quitDialog);
+
+    Atom wm_delete = XInternAtom(XtDisplay(topLevel), "WM_DELETE_WINDOW", False);
+	XmAddWMProtocolCallback(topLevel, wm_delete, QuitCB, quitDialog);
+	XmActivateWMProtocol(topLevel, wm_delete);
+
+    XmStringFree(quitDialogLabel);
+    XmStringFree(quitDialogOk);
+    XmStringFree(quitDialogCancel);
+
+    XtAddCallback(quitDialog, XmNokCallback, ExitCB, NULL);
+
 
     // drawing modes - point, line, rectangle, ellipse
     // will be inside rowColumn
@@ -791,8 +840,6 @@ int main(int argc, char **argv){
 
 
     XtAddCallback(clearBtn, XmNactivateCallback, ClearCB, drawArea);
-    XtAddCallback(quitBtn, XmNactivateCallback, QuitCB, 0);
-
 
 	// XtAddCallback(drawingModeMenu, XmNactivateCallback, setDrawingMode, drawingModeMenu);
 	// XtAddCallback(fillMenu, XmNactivateCallback, setFillMode, fillMenu);
