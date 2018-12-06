@@ -442,7 +442,6 @@ void setLineColorFg (Widget w, XtPointer client_data, XtPointer call_data) {
 		}
 		lineColorFgPixel = xcolor.pixel;
 	}
-	printf("%d\n", lineColorFgPixel);
 }
 
 void setLineColorBg (Widget w, XtPointer client_data, XtPointer call_data) {
